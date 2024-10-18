@@ -34,16 +34,16 @@ pip install git+https://github.com/lachie4145/swarm-openrouter
 ```python
 from swarm import Swarm, Agent
 import os
+
 # Initialize Swarm with custom configurations
 client = Swarm(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.environ.get("OPENROUTER_API_KEY"),
-    default_model="mistralai/mistral-nemo"
+    default_model="google/gemini-flash-1.5"
 )
 
 #client.set_model("openai/gpt-4o-mini")
 #client.set_debug(True)
-
 
 def transfer_to_agent_b():
     return agent_b
@@ -68,9 +68,9 @@ print(response.messages[-1]["content"])
 ```
 
 ```
-Hope glimmers brightly,
-New paths converge gracefully,
-What can I assist?
+Contact made, now,
+Agent B awaits your words,
+Speak your message clear.
 ```
 
 ## Table of Contents
@@ -363,16 +363,9 @@ from swarm.repl import run_demo_loop
 run_demo_loop(agent, stream=True)
 ```
 
-# Core Contributors
+---
 
-- Ilan Bigio - [ibigio](https://github.com/ibigio)
-- James Hills - [jhills20](https://github.com/jhills20)
-- Shyamal Anadkat - [shyamal-anadkat](https://github.com/shyamal-anadkat)
-- Charu Jaiswal - [charuj](https://github.com/charuj)
-- Colin Jarvis - [colin-openai](https://github.com/colin-openai)
-- Katia Gil Guzman - [katia-openai](https://github.com/katia-openai)
-
-
+# Models that have been tested
 ## Confirmed Working
 
 ### OpenAI: GPT-4o-mini

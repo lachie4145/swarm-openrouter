@@ -6,6 +6,13 @@ An educational framework exploring ergonomic, lightweight multi-agent orchestrat
 
 Doing this for fun and to learn more about LLMs and multi-agent orchestration.
 
+## New Features
+
+- **Base URL, API Key, and Model Overwrites:** The `Swarm` class now allows for overwriting the `base_url`, `api_key`, and `default_model` during initialization.
+- **Debug Mode:** A new `set_debug` method allows enabling or disabling debug mode.
+- **Model Restrictions:** Certain models can be restricted from being used by specifying disallowed substrings.
+
+
 > [!WARNING]
 > Only models that support parameter 'tools' are currently supported.
 
@@ -419,9 +426,3 @@ run_demo_loop(agent, stream=True)
 ### Cohere: Command R Plus
 - **Model:** `cohere/command-r-plus`
 - https://openrouter.ai/cohere/command-r-plus
-
-## New Features
-
-- **Base URL, API Key, and Model Overwrites:** The `Swarm` class now allows for overwriting the `base_url`, `api_key`, and `default_model` during initialization.
-- **Debug Mode:** A new `set_debug` method allows enabling or disabling debug mode.
-- **Model Restrictions:** Certain models can be restricted from being used by specifying disallowed substrings.

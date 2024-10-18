@@ -78,6 +78,14 @@ class Swarm:
         messages = [{"role": "system", "content": instructions}] + history
         debug_print(self.debug_mode or debug, "Getting chat completion for...:", messages)
 
+        if agent.llm_callback:
+            # Use the llm_callback instead of the internal OpenAI client
+            llm_input = instructions
+            response = agent.llm_callback(llm_input)
+            if agent.llm_handle_callback:
+                response = agent.llm_handle_callback(response)
+            return response
+
         tools = [function_to_json(f) for f in agent.functions]
         # hide context_variables from model
         for tool in tools:

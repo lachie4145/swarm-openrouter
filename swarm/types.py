@@ -18,6 +18,8 @@ class Agent(BaseModel):
     functions: List[AgentFunction] = []
     tool_choice: str = None
     parallel_tool_calls: bool = True
+    llm_callback: Optional[Callable[[str], str]] = None
+    llm_handle_callback: Optional[Callable[[str], str]] = None
 
 
 class Response(BaseModel):

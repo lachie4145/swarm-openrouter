@@ -33,13 +33,17 @@ pip install git+https://github.com/lachie4145/swarm-openrouter
 
 ```python
 from swarm import Swarm, Agent
-
+import os
 # Initialize Swarm with custom configurations
 client = Swarm(
-    base_url="https://custom-openai-endpoint.com",
-    api_key="your-custom-api-key",
-    default_model="gpt-4-turbo"
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+    default_model="mistralai/mistral-nemo"
 )
+
+#client.set_model("openai/gpt-4o-mini")
+#client.set_debug(True)
+
 
 def transfer_to_agent_b():
     return agent_b

@@ -2,7 +2,7 @@
 import copy
 import json
 from collections import defaultdict
-from typing import List, Callable, Union
+from typing import List, Callable, Union, Optional
 
 # Package/library imports
 from openai import OpenAI
@@ -24,10 +24,24 @@ __CTX_VARS_NAME__ = "context_variables"
 
 
 class Swarm:
-    def __init__(self, client=None):
-        if not client:
-            client = OpenAI()
-        self.client = client
+    def __init__(
+        self,
+        client: Optional[OpenAI] = None,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        default_model: Optional[str] = None
+    ):
+        if client:
+            self.client = client
+        else:
+            client_kwargs = {}
+            if base_url:
+                client_kwargs['base_url'] = base_url
+            if api_key:
+                client_kwargs['api_key'] = api_key
+            self.client = OpenAI(**client_kwargs)
+        
+        self.default_model = default_model
 
     def get_chat_completion(
         self,
@@ -56,7 +70,7 @@ class Swarm:
                 params["required"].remove(__CTX_VARS_NAME__)
 
         create_params = {
-            "model": model_override or agent.model,
+            "model": model_override or self.default_model or agent.model or self.default_model,
             "messages": messages,
             "tools": tools or None,
             "tool_choice": agent.tool_choice,

@@ -6,6 +6,13 @@ An educational framework exploring ergonomic, lightweight multi-agent orchestrat
 
 Doing this for fun and to learn more about LLMs and multi-agent orchestration.
 
+## New Features
+
+- **Base URL, API Key, and Model Overwrites:** The `Swarm` class now allows for overwriting the `base_url`, `api_key`, and `default_model` during initialization.
+- **Debug Mode:** A new `set_debug` method allows enabling or disabling debug mode.
+- **Model Restrictions:** Certain models can be restricted from being used by specifying disallowed substrings.
+
+
 > [!WARNING]
 > Only models that support parameter 'tools' are currently supported.
 
@@ -29,82 +36,21 @@ pip install git+https://github.com/lachie4145/swarm-openrouter
 ```
 
 ## Usage
-
-Here's the updated markdown version:
-
----
-
-## Confirmed Working
-
-### OpenAI: GPT-4o-mini
-- **Model:** `openai/gpt-4o-mini`
-- https://openrouter.ai/openai/gpt-4o-mini
-
-### Google: Gemini Flash 1.5
-- **Model:** `google/gemini-flash-1.5`
-- https://openrouter.ai/google/gemini-flash-1.5
-
-### Google: Gemini Pro 1.5
-- **Model:** `google/gemini-pro-1.5`
-- https://openrouter.ai/google/gemini-pro-1.5
-
-### Meta: Llama 3.1 70B Instruct
-- **Model:** `meta-llama/llama-3.1-70b-instruct`
-- https://openrouter.ai/meta-llama/llama-3.1-70b-instruct
-
-### Mistral: Nemo
-- **Model:** `mistralai/mistral-nemo`
-- https://openrouter.ai/mistralai/mistral-nemo
-
-### DeepSeek: DeepSeek Chat
-- **Model:** `deepseek/deepseek-chat`
-- https://openrouter.ai/deepseek/deepseek-chat
-
----
-
-## Untested / Might Work With Some Extra Configuration
-
-### Nvidia: Llama 3.1 Nemotron 70B Instruct
-- **Model:** `nvidia/llama-3.1-nemotron-70b-instruct`
-- https://openrouter.ai/nvidia/llama-3.1-nemotron-70b-instruct
-
-### Mistral: Mixtral 8x7B Instruct
-- **Model:** `mistralai/mixtral-8x7b-instruct`
-- https://openrouter.ai/mistralai/mixtral-8x7b-instruct
-
-### Anthropic: Claude 3.5 Sonnet (self-moderated)
-- **Model:** `anthropic/claude-3.5-sonnet:beta`
-- https://openrouter.ai/anthropic/claude-3.5-sonnet:beta
-
-### Qwen: Qwen 2.5 72B Instruct
-- **Model:** `qwen/qwen-2.5-72b-instruct`
-- https://openrouter.ai/qwen/qwen-2.5-72b-instruct
-
----
-
-## Does Not Work At All
-
-### Cohere: Command R Plus
-- **Model:** `cohere/command-r-plus`
-- https://openrouter.ai/cohere/command-r-plus
-
-## New Features
-
-- **Base URL, API Key, and Model Overwrites:** The `Swarm` class now allows for overwriting the `base_url`, `api_key`, and `default_model` during initialization.
-- **Debug Mode:** A new `set_debug` method allows enabling or disabling debug mode.
-- **Model Restrictions:** Certain models can be restricted from being used by specifying disallowed substrings.
-
 ## Example Usage
 
 ```python
 from swarm import Swarm, Agent
+import os
 
 # Initialize Swarm with custom configurations
 client = Swarm(
-    base_url="https://custom-openai-endpoint.com",
-    api_key="your-custom-api-key",
-    default_model="gpt-4-turbo"
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+    default_model="google/gemini-flash-1.5"
 )
+
+#client.set_model("openai/gpt-4o-mini")
+#client.set_debug(True)
 
 def transfer_to_agent_b():
     return agent_b
@@ -129,9 +75,9 @@ print(response.messages[-1]["content"])
 ```
 
 ```
-Hope glimmers brightly,
-New paths converge gracefully,
-What can I assist?
+Contact made, now,
+Agent B awaits your words,
+Speak your message clear.
 ```
 
 ## Table of Contents
@@ -424,11 +370,59 @@ from swarm.repl import run_demo_loop
 run_demo_loop(agent, stream=True)
 ```
 
-# Core Contributors
+---
 
-- Ilan Bigio - [ibigio](https://github.com/ibigio)
-- James Hills - [jhills20](https://github.com/jhills20)
-- Shyamal Anadkat - [shyamal-anadkat](https://github.com/shyamal-anadkat)
-- Charu Jaiswal - [charuj](https://github.com/charuj)
-- Colin Jarvis - [colin-openai](https://github.com/colin-openai)
-- Katia Gil Guzman - [katia-openai](https://github.com/katia-openai)
+# Models that have been tested
+## Confirmed Working
+
+### OpenAI: GPT-4o-mini
+- **Model:** `openai/gpt-4o-mini`
+- https://openrouter.ai/openai/gpt-4o-mini
+
+### Google: Gemini Flash 1.5
+- **Model:** `google/gemini-flash-1.5`
+- https://openrouter.ai/google/gemini-flash-1.5
+
+### Google: Gemini Pro 1.5
+- **Model:** `google/gemini-pro-1.5`
+- https://openrouter.ai/google/gemini-pro-1.5
+
+### Meta: Llama 3.1 70B Instruct
+- **Model:** `meta-llama/llama-3.1-70b-instruct`
+- https://openrouter.ai/meta-llama/llama-3.1-70b-instruct
+
+### Mistral: Nemo
+- **Model:** `mistralai/mistral-nemo`
+- https://openrouter.ai/mistralai/mistral-nemo
+
+### DeepSeek: DeepSeek Chat
+- **Model:** `deepseek/deepseek-chat`
+- https://openrouter.ai/deepseek/deepseek-chat
+
+---
+
+## Untested / Might Work With Some Extra Configuration
+
+### Nvidia: Llama 3.1 Nemotron 70B Instruct
+- **Model:** `nvidia/llama-3.1-nemotron-70b-instruct`
+- https://openrouter.ai/nvidia/llama-3.1-nemotron-70b-instruct
+
+### Mistral: Mixtral 8x7B Instruct
+- **Model:** `mistralai/mixtral-8x7b-instruct`
+- https://openrouter.ai/mistralai/mixtral-8x7b-instruct
+
+### Anthropic: Claude 3.5 Sonnet (self-moderated)
+- **Model:** `anthropic/claude-3.5-sonnet:beta`
+- https://openrouter.ai/anthropic/claude-3.5-sonnet:beta
+
+### Qwen: Qwen 2.5 72B Instruct
+- **Model:** `qwen/qwen-2.5-72b-instruct`
+- https://openrouter.ai/qwen/qwen-2.5-72b-instruct
+
+---
+
+## Does Not Work At All
+
+### Cohere: Command R Plus
+- **Model:** `cohere/command-r-plus`
+- https://openrouter.ai/cohere/command-r-plus

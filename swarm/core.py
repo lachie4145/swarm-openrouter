@@ -31,6 +31,16 @@ class Swarm:
         api_key: Optional[str] = None,
         default_model: Optional[str] = None
     ):
+        model_not_allowed = [
+            "anthropic"
+        ]
+        
+        if default_model:
+            for disallowed_model in model_not_allowed:
+                if disallowed_model.lower() in default_model.lower():
+                    raise ValueError(f"Model '{default_model}' is not allowed. It contains a disallowed substring: '{disallowed_model}'")
+        
+        
         if client:
             self.client = client
         else:
@@ -42,6 +52,13 @@ class Swarm:
             self.client = OpenAI(**client_kwargs)
         
         self.default_model = default_model
+        self.debug_mode = False
+
+    def set_debug(self, value: bool):
+        self.debug_mode = value
+
+    def set_model(self, model: str):
+        self.default_model = model
 
     def get_chat_completion(
         self,
@@ -59,7 +76,7 @@ class Swarm:
             else agent.instructions
         )
         messages = [{"role": "system", "content": instructions}] + history
-        debug_print(debug, "Getting chat completion for...:", messages)
+        debug_print(self.debug_mode or debug, "Getting chat completion for...:", messages)
 
         tools = [function_to_json(f) for f in agent.functions]
         # hide context_variables from model
@@ -69,18 +86,40 @@ class Swarm:
             if __CTX_VARS_NAME__ in params["required"]:
                 params["required"].remove(__CTX_VARS_NAME__)
 
+        model = model_override or self.default_model or agent.model or self.default_model
         create_params = {
-            "model": model_override or self.default_model or agent.model or self.default_model,
+            "model": model,
             "messages": messages,
             "tools": tools or None,
-            "tool_choice": agent.tool_choice,
             "stream": stream,
         }
+
+        if tools and agent.tool_choice is not None:
+            create_params["tool_choice"] = agent.tool_choice
 
         if tools:
             create_params["parallel_tool_calls"] = agent.parallel_tool_calls
 
-        return self.client.chat.completions.create(**create_params)
+        debug_print(self.debug_mode or debug, f"Using URL: {self.client.base_url}, Model: {model}")
+
+        try:
+            return self.client.chat.completions.create(**create_params)
+        except Exception as e:
+            if "tool_choice" in str(e):
+                # Remove tool_choice if it's causing issues
+                create_params.pop("tool_choice", None)
+                return self.client.chat.completions.create(**create_params)
+            elif "Extra inputs are not permitted" in str(e):
+                # Clean up messages to remove extra fields
+                for message in messages:
+                    if message.get("role") == "assistant":
+                        message.pop("sender", None)
+                    elif message.get("role") == "tool":
+                        message.pop("tool_name", None)
+                create_params["messages"] = messages
+                return self.client.chat.completions.create(**create_params)
+            else:
+                raise
 
     def handle_function_result(self, result, debug) -> Result:
         match result:
@@ -97,7 +136,7 @@ class Swarm:
                     return Result(value=str(result))
                 except Exception as e:
                     error_message = f"Failed to cast response to string: {result}. Make sure agent functions return a string or Result object. Error: {str(e)}"
-                    debug_print(debug, error_message)
+                    debug_print(self.debug_mode or debug, error_message)
                     raise TypeError(error_message)
 
     def handle_tool_calls(
@@ -115,19 +154,29 @@ class Swarm:
             name = tool_call.function.name
             # handle missing tool case, skip to next tool
             if name not in function_map:
-                debug_print(debug, f"Tool {name} not found in function map.")
+                debug_print(self.debug_mode or debug, f"Tool {name} not found in function map.")
                 partial_response.messages.append(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "tool_name": name,
                         "content": f"Error: Tool {name} not found.",
                     }
                 )
                 continue
-            args = json.loads(tool_call.function.arguments)
+            try:
+                args = json.loads(tool_call.function.arguments)
+            except json.JSONDecodeError:
+                debug_print(self.debug_mode or debug, f"Invalid JSON in tool arguments: {tool_call.function.arguments}")
+                partial_response.messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": f"Error: Invalid JSON in tool arguments.",
+                    }
+                )
+                continue
             debug_print(
-                debug, f"Processing tool call: {name} with arguments {args}")
+                self.debug_mode or debug, f"Processing tool call: {name} with arguments {args}")
 
             func = function_map[name]
             # pass context_variables to agent functions
@@ -140,7 +189,6 @@ class Swarm:
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "tool_name": name,
                     "content": result.value,
                 }
             )
@@ -169,7 +217,6 @@ class Swarm:
 
             message = {
                 "content": "",
-                "sender": agent.name,
                 "role": "assistant",
                 "function_call": None,
                 "tool_calls": defaultdict(
@@ -194,11 +241,7 @@ class Swarm:
             yield {"delim": "start"}
             for chunk in completion:
                 delta = json.loads(chunk.choices[0].delta.json())
-                if delta["role"] == "assistant":
-                    delta["sender"] = active_agent.name
                 yield delta
-                delta.pop("role", None)
-                delta.pop("sender", None)
                 merge_chunk(message, delta)
             yield {"delim": "end"}
 
@@ -206,11 +249,11 @@ class Swarm:
                 message.get("tool_calls", {}).values())
             if not message["tool_calls"]:
                 message["tool_calls"] = None
-            debug_print(debug, "Received completion:", message)
+            debug_print(self.debug_mode or debug, "Received completion:", message)
             history.append(message)
 
             if not message["tool_calls"] or not execute_tools:
-                debug_print(debug, "Ending turn.")
+                debug_print(self.debug_mode or debug, "Ending turn.")
                 break
 
             # convert tool_calls to objects
@@ -279,15 +322,20 @@ class Swarm:
                 stream=stream,
                 debug=debug,
             )
-            message = completion.choices[0].message
-            debug_print(debug, "Received completion:", message)
-            message.sender = active_agent.name
-            history.append(
-                json.loads(message.model_dump_json())
-            )  # to avoid OpenAI types (?)
+            try:
+                message = completion.choices[0].message
+            except AttributeError:
+                debug_print(self.debug_mode or debug, "Error: Completion object has no 'choices' attribute.")
+                break
+            except IndexError:
+                debug_print(self.debug_mode or debug, "Error: No choices available in completion.")
+                break
+
+            debug_print(self.debug_mode or debug, "Received completion:", message)
+            history.append(json.loads(message.model_dump_json()))
 
             if not message.tool_calls or not execute_tools:
-                debug_print(debug, "Ending turn.")
+                debug_print(self.debug_mode or debug, "Ending turn.")
                 break
 
             # handle function calls, updating context_variables, and switching agents
